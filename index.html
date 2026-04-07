@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width,initial-scale=1" />
+		<title>Experiment Visualizer</title>
+		<link rel="stylesheet" href="styles.css" />
+		<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+	</head>
+	<body>
+		<header>
+			<h1>Experiment Visualizer</h1>
+			<p>Upload Unity JSON experiment outputs to visualize results.</p>
+		</header>
+
+		<main>
+			<section class="controls">
+				<label class="file-label">Upload JSON file
+					<input id="fileInput" type="file" accept="application/json" />
+				</label>
+				<button id="loadPaste">Load from paste</button>
+				<button id="loadSample">Load sample data</button>
+			</section>
+
+			<section class="input-area">
+				<textarea id="pasteArea" placeholder="Paste JSON here (array of objects or single object)"></textarea>
+			</section>
+
+			<section id="summary" class="panel">
+				<h2>Summary</h2>
+				<div id="summaryContent">No data loaded.</div>
+			</section>
+
+			<section id="table" class="panel">
+				<h2>Table View</h2>
+				<div id="tableContainer">No data loaded.</div>
+			</section>
+
+			<section id="charts" class="panel">
+				<h2>Charts</h2>
+				<div id="chartsContainer">No data loaded.</div>
+			</section>
+
+			<section id="jsonViewer" class="panel">
+				<h2>Raw / Pretty JSON</h2>
+				<pre id="jsonPre">No data loaded.</pre>
+			</section>
+		</main>
+
+		<footer>
+			<small>Simple tool to explore Unity experiment JSON outputs.</small>
+		</footer>
+
+		<script src="index.js"></script>
+	</body>
+</html>
