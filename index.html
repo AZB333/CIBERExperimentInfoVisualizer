@@ -1,56 +1,79 @@
 <!doctype html>
 <html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width,initial-scale=1" />
-		<title>Experiment Visualizer</title>
-		<link rel="stylesheet" href="styles.css" />
-		<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-	</head>
-	<body>
-		<header>
-			<h1>Experiment Visualizer</h1>
-			<p>Upload Unity JSON experiment outputs to visualize results.</p>
-		</header>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Experiment Visualizer</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
 
-		<main>
-			<section class="controls">
-				<label class="file-label">Upload JSON file
-					<input id="fileInput" type="file" accept="application/json" />
-				</label>
-				<button id="loadPaste">Load from paste</button>
-				<button id="loadSample">Load sample data</button>
-			</section>
+  <header>
+    <h1>Experiment Visualizer</h1>
+    <p>Upload Unity JSON experiment outputs to visualize results.</p>
+  </header>
 
-			<section class="input-area">
-				<textarea id="pasteArea" placeholder="Paste JSON here (array of objects or single object)"></textarea>
-			</section>
+  <main>
+    <section class="controls">
+      <label class="file-label">&#8679; Upload JSON file
+        <input id="fileInput" type="file" accept="application/json" />
+      </label>
+      <button id="loadPaste">Load from paste</button>
+    </section>
 
-			<section id="summary" class="panel">
-				<h2>Summary</h2>
-				<div id="summaryContent">No data loaded.</div>
-			</section>
+    <section class="input-area">
+      <textarea id="pasteArea" placeholder="Paste JSON here (array of objects or single object)"></textarea>
+    </section>
 
-			<section id="table" class="panel">
-				<h2>Table View</h2>
-				<div id="tableContainer">No data loaded.</div>
-			</section>
+    <div id="status-msg"></div>
 
-			<section id="charts" class="panel">
-				<h2>Charts</h2>
-				<div id="chartsContainer">No data loaded.</div>
-			</section>
+    <div id="dashboard">
+      <div class="session-header">
+        <div>
+          <div class="session-name" id="s-name">—</div>
+          <div class="session-date" id="s-date"></div>
+        </div>
+        <div id="s-badge"></div>
+      </div>
 
-			<section id="jsonViewer" class="panel">
-				<h2>Raw / Pretty JSON</h2>
-				<pre id="jsonPre">No data loaded.</pre>
-			</section>
-		</main>
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-label">Duration</div>
+          <div class="metric-value" id="m-duration">—</div>
+          <div class="metric-sub">seconds</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Water recordings</div>
+          <div class="metric-value" id="m-water">—</div>
+          <div class="metric-sub">frames</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Phone looks</div>
+          <div class="metric-value" id="m-phone-count">—</div>
+          <div class="metric-sub">events</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Avg phone duration</div>
+          <div class="metric-value" id="m-phone-avg">—</div>
+          <div class="metric-sub">sec per event</div>
+        </div>
+      </div>
 
-		<footer>
-			<small>Simple tool to explore Unity experiment JSON outputs.</small>
-		</footer>
+      <div class="panels">
+        <div class="panel">
+          <div class="panel-title">Checkpoints</div>
+          <div id="checkpoint-list"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-title">Phone usage</div>
+          <div id="phone-list"></div>
+        </div>
+      </div>
 
-		<script src="index.js"></script>
-	</body>
+      <button class="reset-btn" id="resetBtn">&#8617; Clear and load another file</button>
+    </div>
+  </main>
+
+  <script src="index.js"></script>
+</body>
 </html>
