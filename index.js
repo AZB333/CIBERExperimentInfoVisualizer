@@ -27,12 +27,6 @@ resetBtn.addEventListener('click', () => {
 	fileInput.value = '';
 });
 
-function formatTime(seconds) {
-	const m = Math.floor(seconds / 60);
-	const s = (seconds % 60).toFixed(2);
-	return m > 0 ? `${m}m ${s}s` : `${s}s`;
-}
-
 function showStatus(msg, type) {
 	statusMsg.textContent = msg;
 	statusMsg.className = type;
@@ -86,15 +80,19 @@ function renderDashboard(data) {
 
 	const checkpointList = document.getElementById('checkpoint-list');
 	checkpointList.innerHTML = '';
-	for (let i = 1; i <= 8; i++) {
-	const hit = i in checkpointTimes;
-	checkpointList.innerHTML += `
+	checkpointList.innerHTML = `
 		<div class="checkpoint-row">
-		<div class="checkpoint-dot ${hit ? 'hit' : 'miss'}">${i}</div>
-		${hit
-			? `<span class="checkpoint-time">${checkpointTimes[i].toFixed(2)}s</span>`
-			: `<span class="checkpoint-none">not reached</span>`}
-		</div>`;
+		<div class="checkpoint-dot hit">1</div>
+		<span class="checkpoint-time">0s (0.00m)</span>`;
+	for (let i = 2; i <= 8; i++) {
+		const hit = i in checkpointTimes;
+		checkpointList.innerHTML += `
+			<div class="checkpoint-row">
+			<div class="checkpoint-dot ${hit ? 'hit' : 'miss'}">${i}</div>
+			${hit
+				? `<span class="checkpoint-time">${checkpointTimes[i].toFixed(2)}s (${(checkpointTimes[i] / 60).toFixed(2)}m)</span>`
+				: `<span class="checkpoint-none">not reached</span>`}
+			</div>`;
 	}
 
 	// Phone events (transition-based)
