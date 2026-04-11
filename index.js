@@ -1,5 +1,6 @@
+console.log("JS LOADED");
 document.addEventListener('DOMContentLoaded', () => {
-
+console.log("JS LOADED");
 	let _pathFrames = [];
 	let _mapImageLoaded = false;
 
