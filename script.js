@@ -1,20 +1,25 @@
-console.log("JS LOADED");
 document.addEventListener('DOMContentLoaded', () => {
-console.log("JS LOADED");
-	let _pathFrames = [];
-	let _mapImageLoaded = false;
 
-	const fileInput      = document.getElementById('fileInput');
-	const loadPasteBtn   = document.getElementById('loadPaste');
-	const loadSampleBtn  = document.getElementById('loadSample');
-	const pasteArea      = document.getElementById('pasteArea');
-	const statusMsg      = document.getElementById('status-msg');
-	const dashboard      = document.getElementById('dashboard');
-	const resetBtn       = document.getElementById('resetBtn');
-	const mapImageInput  = document.getElementById('mapImageInput');
-	const mapImage       = document.getElementById('map-image');
+	let _pathFrames = [];
+	let _mapImageLoaded = true;
+
+	const fileInput = document.getElementById('fileInput');
+	const loadSampleBtn = document.getElementById('loadSample');
+	const pasteArea = document.getElementById('pasteArea');
+	const statusMsg = document.getElementById('status-msg');
+	const dashboard = document.getElementById('dashboard');
+	const resetBtn = document.getElementById('resetBtn');
+	const mapImage = document.getElementById('map-image');
 	const mapPlaceholder = document.getElementById('map-placeholder');
-	const redrawBtn      = document.getElementById('redrawBtn');
+	const _bounds = {
+		minX: 57,
+		maxX: 420,
+		minZ: -5,
+		maxZ: 359
+		};
+
+	mapPlaceholder.style.display = 'none';
+	mapImage.classList.remove('hidden');
 
 	fileInput.addEventListener('change', e => {
 		const file = e.target.files[0]; if (!file) return;
@@ -22,11 +27,7 @@ console.log("JS LOADED");
 		reader.onload = ev => parseAndRender(ev.target.result);
 		reader.readAsText(file);
 	});
-	loadPasteBtn.addEventListener('click', () => {
-		const text = pasteArea.value.trim();
-		if (!text) { showStatus('Paste area is empty.', 'error'); return; }
-		parseAndRender(text);
-	});
+
 	loadSampleBtn.addEventListener('click', () => { parseAndRender(JSON.stringify(generateSampleData())); });
 	resetBtn.addEventListener('click', () => {
 		dashboard.style.display = 'none';
@@ -34,22 +35,38 @@ console.log("JS LOADED");
 		pasteArea.value = ''; fileInput.value = ''; _pathFrames = [];
 	});
 
-	mapImageInput.addEventListener('change', e => {
-		const file = e.target.files[0]; if (!file) return;
-		const reader = new FileReader();
-		reader.onload = ev => {
-		mapImage.src = ev.target.result;
-		mapImage.onload = () => {
-			mapImage.classList.remove('hidden');
-			mapPlaceholder.style.display = 'none';
-			_mapImageLoaded = true;
-			if (_pathFrames.length) drawPath(_pathFrames);
-		};
-		};
-		reader.readAsDataURL(file);
-	});
+	function computeBounds(frames) {
+		let minX = Infinity, maxX = -Infinity;
+		let minZ = Infinity, maxZ = -Infinity;
 
-	redrawBtn.addEventListener('click', () => { if (_pathFrames.length) drawPath(_pathFrames); });
+		frames.forEach(f => {
+			const x = f.position.x;
+			const z = f.position.z;
+
+			if (x < minX) minX = x;
+			if (x > maxX) maxX = x;
+			if (z < minZ) minZ = z;
+			if (z > maxZ) maxZ = z;
+		});
+
+		// Add padding (5%)
+		// const padX = (maxX - minX) * 0.05;
+		// const padZ = (maxZ - minZ) * 0.05;
+		const padX = 0;
+		const padZ = 0;
+
+		return {
+			minX: minX - padX,
+			maxX: maxX + padX,
+			minZ: minZ - padZ,
+			maxZ: maxZ + padZ
+		};
+	}
+
+	mapImage.onload = () => {
+		if (_pathFrames.length) drawPath(_pathFrames);
+	};
+
 
 	let _resizeTimer = null;
 	window.addEventListener('resize', () => {
@@ -76,6 +93,8 @@ console.log("JS LOADED");
 
 	function renderDashboard(data) {
 		const frames = data.frames;
+		_pathFrames = frames;
+		// _bounds = computeBounds(frames);
 		document.getElementById('s-name').textContent = data.sessionName || 'Unknown session';
 		document.getElementById('s-date').textContent = data.recordingDate || '';
 
@@ -132,6 +151,32 @@ console.log("JS LOADED");
 		phoneList.innerHTML += `<div class="phone-summary">Total: ${total.toFixed(2)}s &nbsp;·&nbsp; ${((total/dur)*100).toFixed(1)}% of session</div>`;
 		}
 
+		// Hearts — detect drops in numHearts between consecutive frames
+    const heartLosses = [];
+    for (let i = 1; i < frames.length; i++) {
+      const prev = frames[i-1].numHearts, curr = frames[i].numHearts;
+      if (typeof prev === "number" && typeof curr === "number" && curr < prev) {
+        for (let h = 0; h < (prev - curr); h++) heartLosses.push({ heart: prev - h, timestamp: frames[i].timestamp });
+      }
+    }
+    const startHearts = typeof frames[0].numHearts === "number" ? frames[0].numHearts : 5;
+    const finalHearts = typeof frames[frames.length-1].numHearts === "number" ? frames[frames.length-1].numHearts : startHearts;
+    const heartsDisplay = document.getElementById("hearts-display");
+    heartsDisplay.innerHTML = "";
+    for (let i = 1; i <= startHearts; i++) {
+      const lost = i > finalHearts;
+      heartsDisplay.innerHTML += `<span class="heart-icon${lost ? " lost" : ""}">&#10084;</span>`;
+    }
+    const heartsList = document.getElementById("hearts-list");
+    heartsList.innerHTML = "";
+    if (heartLosses.length === 0) {
+      heartsList.innerHTML = "<p class=\"heart-none\">No hearts lost</p>";
+    } else {
+      heartLosses.forEach((ev, i) => {
+        heartsList.innerHTML += `<div class="heart-row"><div class="heart-num">&#10084;</div><span class="heart-time">Heart ${ev.heart} lost at ${formatTime(ev.timestamp)}</span></div>`;
+      });
+    }
+
 		dashboard.style.display = 'block';
 		_pathFrames = frames;
 		// Use a short timeout so the dashboard is fully painted before we read canvas dimensions
@@ -141,35 +186,27 @@ console.log("JS LOADED");
 	// ── Path drawing ──────────────────────────────────────────────────────────
 
 	function getMapBounds() {
-		return {
-		minX: parseFloat(document.getElementById('cfg-minX').value) || -5,
-		maxX: parseFloat(document.getElementById('cfg-maxX').value) || 420,
-		minZ: parseFloat(document.getElementById('cfg-minZ').value) || -5,
-		maxZ: parseFloat(document.getElementById('cfg-maxZ').value) || 365,
-		};
+		return _bounds;
 	}
 
 	// Convert world coords → canvas pixel coords.
-	// Unity Z increases "forward" which is typically "up" on a top-down map, so we flip Z.
 	function worldToCanvas(x, z, canvas) {
 		const b = getMapBounds();
-		const rect = canvas.getBoundingClientRect();
+
+		const nx = (x - b.minX) / (b.maxX - b.minX);
+		const nz = (z - b.minZ) / (b.maxZ - b.minZ);
+
 		return {
-		x: ((x - b.minX) / (b.maxX - b.minX)) * rect.width,
-		y: (1 - (z - b.minZ) / (b.maxZ - b.minZ)) * rect.height
+			x: nx * canvas.width,
+			y: (1 - nz) * canvas.height
 		};
 	}
 
 	function drawPath(frames) {
 		const canvas = document.getElementById('path-canvas');
-		const container = document.getElementById('map-container');
-
-		// Give container an explicit aspect ratio when no image is loaded
-		if (!_mapImageLoaded) container.style.aspectRatio = '2/1';
-		else container.style.aspectRatio = '';
 
 		// Size the canvas pixel buffer to match its CSS display size
-		const rect = canvas.getBoundingClientRect();
+		const rect = mapImage.getBoundingClientRect();
 		canvas.width  = rect.width;
 		canvas.height = rect.height;
 
@@ -257,7 +294,7 @@ console.log("JS LOADED");
 	canvas.onmouseleave = null;
 
 	canvas.onmousemove = e => {
-		const rect = canvas.getBoundingClientRect();
+		const rect = mapImage.getBoundingClientRect();
 		const mx = e.clientX - rect.left;
 		const my = e.clientY - rect.top;
 

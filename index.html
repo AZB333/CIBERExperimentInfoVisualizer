@@ -18,13 +18,9 @@
         <label class="file-label">&#8679; Upload JSON file
           <input id="fileInput" type="file" accept="application/json" />
         </label>
-        <button id="loadPaste">Load from paste</button>
         <button id="loadSample">Load sample data</button>
       </section>
 
-      <section class="input-area">
-        <textarea id="pasteArea" placeholder="Paste JSON here (array of objects or single object)"></textarea>
-      </section>
 
       <div id="status-msg"></div>
 
@@ -71,13 +67,16 @@
           </div>
         </div>
 
+        <div class="panel" style="margin-top:12px;">
+          <div class="panel-title">Hearts / hazard hits</div>
+          <div class="hearts-display" id="hearts-display"></div>
+          <div id="hearts-list"></div>
+      </div>
+
         <div class="map-panel">
           <div class="map-panel-header">
             <div class="panel-title" style="margin-bottom:0;">Path overview</div>
             <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-              <label class="file-label" style="font-size:11px;padding:5px 10px;">&#8679; Load map image
-                <input id="mapImageInput" type="file" accept="image/*" />
-              </label>
               <div class="map-legend">
                 <div class="legend-item"><div class="legend-swatch" style="background:#4af0a8;"></div>Start</div>
                 <div class="legend-item"><div class="legend-swatch" style="background:#f040a8;"></div>End</div>
@@ -88,30 +87,12 @@
           </div>
 
           <div id="map-container">
-            <img id="map-image" src="mainwaypointmap.png" alt="map" />
+            <img id="map-image" src="envmap.png" alt="map" />
             <div id="map-placeholder">
               <span style="font-size:22px;opacity:0.25;">&#9776;</span>
               No map image loaded — path drawn on blank canvas
             </div>
             <canvas id="path-canvas"></canvas>
-          </div>
-
-          <div class="map-config">
-            <label>Min X (world)
-              <input type="number" id="cfg-minX" value="-5" step="any" />
-            </label>
-            <label>Max X (world)
-              <input type="number" id="cfg-maxX" value="420" step="any" />
-            </label>
-            <label>Min Z (world)
-              <input type="number" id="cfg-minZ" value="-5" step="any" />
-            </label>
-            <label>Max Z (world)
-              <input type="number" id="cfg-maxZ" value="365" step="any" />
-            </label>
-            <div>
-              <button id="redrawBtn">Redraw path</button>
-            </div>
           </div>
         </div>
 
