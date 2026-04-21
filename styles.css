@@ -118,3 +118,30 @@
 
     .reset-btn { font-size: 11px; color: var(--text-dim); background: none; border: none; cursor: pointer; padding: 0; font-family: var(--mono); margin-top: 1.25rem; }
     .reset-btn:hover { color: var(--text-muted); background: none; border: none; }
+
+        /* Water recordings detail */
+    .water-section-title { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 8px; }
+    .water-rec { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius); padding: 9px 11px; margin-bottom: 8px; }
+    .water-rec:last-child { margin-bottom: 0; }
+    .water-rec-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+    .water-rec-label { font-family: var(--mono); font-size: 11px; color: var(--accent); font-weight: 500; }
+    .water-rec-time { font-family: var(--mono); font-size: 11px; color: var(--text-muted); }
+    .water-rec-row { display: flex; gap: 16px; flex-wrap: wrap; }
+    .water-rec-stat { display: flex; flex-direction: column; gap: 2px; }
+    .water-rec-stat-label { font-size: 10px; color: var(--text-dim); font-family: var(--mono); }
+    .water-rec-stat-val { font-size: 13px; font-family: var(--mono); color: var(--text); }
+    .water-rec-stat-val.no-guess { color: var(--text-dim); font-style: italic; }
+    .water-rec-stat-val.error-good { color: var(--accent); }
+    .water-rec-stat-val.error-ok { color: var(--warn); }
+    .water-rec-stat-val.error-bad { color: var(--danger); }
+
+        /* Hearts panel */
+    .hearts-display { display: flex; gap: 8px; align-items: center; margin-bottom: 1rem; }
+    .heart-icon { font-size: 22px; line-height: 1; }
+    .heart-icon.lost { opacity: 0.18; filter: grayscale(1); }
+    .heart-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--border); }
+    .heart-row:last-child { border-bottom: none; }
+    .heart-num { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 11px; font-weight: 500; flex-shrink: 0; background: rgba(240,96,96,0.12); color: var(--danger); border: 1px solid rgba(240,96,96,0.25); }
+    .heart-time { font-family: var(--mono); font-size: 13px; color: var(--text); }
+    .heart-none { font-size: 12px; color: var(--text-dim); font-style: italic; }
+ 

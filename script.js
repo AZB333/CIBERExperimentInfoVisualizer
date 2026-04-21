@@ -94,19 +94,61 @@ document.addEventListener('DOMContentLoaded', () => {
 	function renderDashboard(data) {
 		const frames = data.frames;
 		_pathFrames = frames;
-		// _bounds = computeBounds(frames);
 		document.getElementById('s-name').textContent = data.sessionName || 'Unknown session';
 		document.getElementById('s-date').textContent = data.recordingDate || '';
 
 		const dur = typeof data.duration === 'number' ? data.duration : (frames[frames.length-1]?.timestamp || 0);
 		document.getElementById('m-duration').textContent = formatTime(dur);
 
-		let waterCount = 0, inWater = false;
-		for (const f of frames) {
-		if (f.recordingWater && !inWater)      { waterCount++; inWater = true; }
-		else if (!f.recordingWater && inWater)  { inWater = false; }
+
+		//User Guesses
+		const guesses = frames.filter(f =>
+			typeof f.userWaterHeightGuess === "number" &&
+			f.userWaterHeightGuess !== -1
+		);
+
+		document.getElementById('m-water').textContent = guesses.length;
+
+		const waterList = document.getElementById('water-list');
+		waterList.innerHTML = '';
+
+		if (guesses.length === 0) {
+			waterList.innerHTML = '';
+		} else {
+			waterList.innerHTML = '<div class="water-section-title">Water height guesses</div>';
+
+			guesses.forEach((f, i) => {
+				const err = Math.abs(f.userWaterHeightGuess - f.waterDepth);
+
+				waterList.innerHTML += `
+				<div class="water-rec">
+					<div class="water-rec-header">
+						<span class="water-rec-label">Guess ${i + 1}</span>
+						<span class="water-rec-time">${formatTime(f.timestamp)}</span>
+					</div>
+
+					<div class="water-rec-row">
+						<div class="water-rec-stat">
+							<span class="water-rec-stat-label">True depth</span>
+							<span>${f.waterDepth.toFixed(2)}m</span>
+						</div>
+
+						<div class="water-rec-stat">
+							<span class="water-rec-stat-label">User guess</span>
+							<span>${f.userWaterHeightGuess.toFixed(2)}m</span>
+						</div>
+
+						<div class="water-rec-stat">
+							<span class="water-rec-stat-label">Error</span>
+							<span>${err.toFixed(2)}m</span>
+						</div>
+					</div>
+				</div>`;
+			});
 		}
-		document.getElementById('m-water').textContent = waterCount;
+ 
+
+		//Checkpoint Stuff
 
 		const cpTimes = {};
 		for (const f of frames) {
@@ -152,35 +194,34 @@ document.addEventListener('DOMContentLoaded', () => {
 		}
 
 		// Hearts — detect drops in numHearts between consecutive frames
-    const heartLosses = [];
-    for (let i = 1; i < frames.length; i++) {
-      const prev = frames[i-1].numHearts, curr = frames[i].numHearts;
-      if (typeof prev === "number" && typeof curr === "number" && curr < prev) {
-        for (let h = 0; h < (prev - curr); h++) heartLosses.push({ heart: prev - h, timestamp: frames[i].timestamp });
-      }
-    }
-    const startHearts = typeof frames[0].numHearts === "number" ? frames[0].numHearts : 5;
-    const finalHearts = typeof frames[frames.length-1].numHearts === "number" ? frames[frames.length-1].numHearts : startHearts;
-    const heartsDisplay = document.getElementById("hearts-display");
-    heartsDisplay.innerHTML = "";
-    for (let i = 1; i <= startHearts; i++) {
-      const lost = i > finalHearts;
-      heartsDisplay.innerHTML += `<span class="heart-icon${lost ? " lost" : ""}">&#10084;</span>`;
-    }
-    const heartsList = document.getElementById("hearts-list");
-    heartsList.innerHTML = "";
-    if (heartLosses.length === 0) {
-      heartsList.innerHTML = "<p class=\"heart-none\">No hearts lost</p>";
-    } else {
-      heartLosses.forEach((ev, i) => {
-        heartsList.innerHTML += `<div class="heart-row"><div class="heart-num">&#10084;</div><span class="heart-time">Heart ${ev.heart} lost at ${formatTime(ev.timestamp)}</span></div>`;
-      });
-    }
+		const heartLosses = [];
+		for (let i = 1; i < frames.length; i++) {
+		const prev = frames[i-1].numHearts, curr = frames[i].numHearts;
+		if (typeof prev === "number" && typeof curr === "number" && curr < prev) {
+			for (let h = 0; h < (prev - curr); h++) heartLosses.push({ heart: prev - h, timestamp: frames[i].timestamp });
+		}
+		}
+		const startHearts = typeof frames[0].numHearts === "number" ? frames[0].numHearts : 5;
+		const finalHearts = typeof frames[frames.length-1].numHearts === "number" ? frames[frames.length-1].numHearts : startHearts;
+		const heartsDisplay = document.getElementById("hearts-display");
+		heartsDisplay.innerHTML = "";
+		for (let i = 1; i <= startHearts; i++) {
+		const lost = i > finalHearts;
+		heartsDisplay.innerHTML += `<span class="heart-icon${lost ? " lost" : ""}">&#10084;</span>`;
+		}
+		const heartsList = document.getElementById("hearts-list");
+		heartsList.innerHTML = "";
+		if (heartLosses.length === 0) {
+		heartsList.innerHTML = "<p class=\"heart-none\">No hearts lost</p>";
+		} else {
+		heartLosses.forEach((ev, i) => {
+			heartsList.innerHTML += `<div class="heart-row"><div class="heart-num">&#10084;</div><span class="heart-time">Heart ${ev.heart} lost at ${formatTime(ev.timestamp)}</span></div>`;
+		});
+		}
 
-		dashboard.style.display = 'block';
-		_pathFrames = frames;
-		// Use a short timeout so the dashboard is fully painted before we read canvas dimensions
-		setTimeout(() => drawPath(frames), 50);
+			dashboard.style.display = 'block';
+			_pathFrames = frames;
+			setTimeout(() => drawPath(frames), 50);
 	}
 
 	// ── Path drawing ──────────────────────────────────────────────────────────
@@ -251,15 +292,25 @@ document.addEventListener('DOMContentLoaded', () => {
 		ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
 		}
 
-		// Water overlay — blue
-		ctx.lineWidth = 6;
-		ctx.strokeStyle = 'rgba(74,180,240,0.9)';
-		for (let i = 1; i < frames.length; i++) {
-		if (!frames[i].recordingWater) continue;
-		const p1 = worldToCanvas(frames[i-1].position.x, frames[i-1].position.z, canvas);
-		const p2 = worldToCanvas(frames[i].position.x,   frames[i].position.z,   canvas);
-		ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
-		}
+		const guessPoints = frames.filter(f =>
+			typeof f.userWaterHeightGuess === "number" &&
+			f.userWaterHeightGuess !== -1
+		);
+
+		// Water guess markers - blue
+		guessPoints.forEach(f => {
+		const p = worldToCanvas(f.position.x, f.position.z, canvas);
+
+		ctx.beginPath();
+		ctx.arc(p.x, p.y, 10, 0, Math.PI * 2);
+		ctx.fillStyle = "rgba(74,180,240,0.25)";
+		ctx.fill();
+
+		ctx.beginPath();
+		ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
+		ctx.fillStyle = "#4ab4f0";
+		ctx.fill();
+		});
 
 		// Checkpoint markers
 		const cpSeen = {};
@@ -315,12 +366,17 @@ document.addEventListener('DOMContentLoaded', () => {
 		const s = (t % 60).toFixed(2);
 		const ts = m > 0 ? `${m}m ${s}s` : `${s}s`;
 
+		
+
 		tooltip.innerHTML =
 			`<span style="color:#4af0a8">t = ${ts}</span><br>` +
 			`x: ${nearest.position.x.toFixed(1)} &nbsp; z: ${nearest.position.z.toFixed(1)}<br>` +
 			`depth: ${nearest.waterDepth.toFixed(2)}m` +
 			(nearest.isLookingAtPhone ? `<br><span style="color:#f0b840">■ phone</span>` : '') +
 			(nearest.recordingWater   ? `<br><span style="color:#4ab4f0">■ water recording</span>` : '');
+			(nearest.userWaterHeightGuess !== -1
+			? `<br><span style="color:#4ab4f0">guess: ${nearest.userWaterHeightGuess.toFixed(2)}m</span>`
+			: '')
 
 		tooltip.style.display = 'block';
 		tooltip.style.left = (e.clientX + 14) + 'px';
@@ -338,35 +394,49 @@ document.addEventListener('DOMContentLoaded', () => {
 	// ── Sample data ───────────────────────────────────────────────────────────
 
 	function generateSampleData() {
+
 		const frames = [];
 		let ts = 0;
+
 		const waypoints = [
-		{x:403,z:0},{x:322,z:137},{x:185,z:70},{x:116,z:137},
-		{x:184,z:208},{x:324,z:277},{x:184,z:354},{x:52,z:352}
+			{x:403,z:0},{x:322,z:137},{x:185,z:70},
+			{x:116,z:137},{x:184,z:208},{x:324,z:277},
+			{x:184,z:354},{x:52,z:352}
 		];
-		const totalPts = 8 * 40;
-		let phoneTimer = 0, inPhone = false, waterTimer = 0, inWaterSeg = false, waterBursts = 0;
-		for (let i = 0; i < totalPts; i++) {
-		ts += 0.5 + Math.random() * 0.08;
-		const wpIdx = Math.min(Math.floor(i / 40), 7);
-		const t = (i % 40) / 40;
-		const from = waypoints[wpIdx], to = waypoints[Math.min(wpIdx+1, 7)];
-		if (!inPhone && Math.random() < 0.015) { inPhone = true; phoneTimer = 0; }
-		if (inPhone) { phoneTimer++; if (phoneTimer > 6) inPhone = false; }
-		if (!inWaterSeg && waterBursts < 4 && Math.random() < 0.008) { inWaterSeg = true; waterTimer = 0; waterBursts++; }
-		if (inWaterSeg) { waterTimer++; if (waterTimer > 10) inWaterSeg = false; }
-		frames.push({
-			timestamp: ts,
-			position: { x: from.x+(to.x-from.x)*t+(Math.random()-0.5)*0.6, y: 4.25, z: from.z+(to.z-from.z)*t+(Math.random()-0.5)*0.6 },
-			rotation: {x:-0.1,y:-0.26,z:-0.01,w:-0.96},
-			gazeDirection: {x:0.51,y:-0.19,z:0.84},
-			waterDepth: 8.1+Math.random(),
-			recordingWater: inWaterSeg,
-			waypointReached: wpIdx+1,
-			isLookingAtPhone: inPhone
-		});
+
+		for (let i = 0; i < 320; i++) {
+
+			ts += 0.5;
+
+			const wp = Math.floor(i / 40);
+			const t = (i % 40) / 40;
+
+			const from = waypoints[wp];
+			const to = waypoints[Math.min(wp + 1, 7)];
+
+			frames.push({
+				timestamp: ts,
+				position: {
+					x: from.x + (to.x - from.x) * t,
+					y: 4,
+					z: from.z + (to.z - from.z) * t
+				},
+				waterDepth: 8 + Math.random(),
+
+				userWaterHeightGuess:
+					Math.random() < 0.05 ? 7 + Math.random() * 2 : -1,
+
+				isLookingAtPhone: Math.random() < 0.02,
+				waypointReached: wp + 1
+			});
 		}
-		return { sessionName:"sample-session-01", recordingDate: new Date().toISOString().replace('T',' ').slice(0,19), duration:ts, frameCount:frames.length, frames };
+
+		return {
+			sessionName: "sample",
+			recordingDate: new Date().toISOString(),
+			duration: ts,
+			frames
+		};
 	}
 
 });
