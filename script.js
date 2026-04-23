@@ -150,22 +150,34 @@ document.addEventListener('DOMContentLoaded', () => {
 
 		//Checkpoint Stuff
 
+		// Collect first arrival time per waypoint
 		const cpTimes = {};
 		for (const f of frames) {
 		const cp = f.waypointReached;
 		if (cp != null && !(cp in cpTimes)) cpTimes[cp] = f.timestamp;
 		}
-
+	
+		// Collect durationInWaypoint 
+		const cpDurations = {};
+		for (const f of frames) {
+		const cp = f.waypointReached;
+		if (cp != null && typeof f.durationInWaypoint === 'number' && f.durationInWaypoint !== -1 && !(cp in cpDurations)) {
+			cpDurations[cp] = f.durationInWaypoint;
+		}
+		}
+	
 		const finished = 8 in cpTimes;
 		document.getElementById('s-badge').innerHTML = finished
 		? '<span class="badge badge-success">&#10003; Completed</span>'
 		: '<span class="badge badge-danger">&#10005; Did not finish</span>';
-
+	
 		const cpList = document.getElementById('cp-list');
 		cpList.innerHTML = '';
 		for (let i = 1; i <= 8; i++) {
 		const hit = i in cpTimes;
-		cpList.innerHTML += `<div class="cp-row"><div class="cp-dot ${hit ? 'hit' : 'miss'}">${i}</div>${hit ? `<span class="cp-time">${formatTime(cpTimes[i])}</span>` : `<span class="cp-none">not reached</span>`}</div>`;
+		const dur = cpDurations[i];
+		const durStr = (hit && dur !== undefined) ? `<span class="cp-duration">${dur.toFixed(2)}s in zone</span>` : '';
+		cpList.innerHTML += `<div class="cp-row"><div class="cp-row-left"><div class="cp-dot ${hit ? 'hit' : 'miss'}">${i}</div>${hit ? `<span class="cp-time">${formatTime(cpTimes[i])}</span>` : `<span class="cp-none">not reached</span>`}</div>${durStr}</div>`;
 		}
 
 		const phoneEvents = [];
@@ -312,6 +324,17 @@ document.addEventListener('DOMContentLoaded', () => {
 		ctx.fill();
 		});
 
+		 // Damage dots — red, drawn where numHearts drops
+		for (let i = 1; i < frames.length; i++) {
+		const prev = frames[i-1].numHearts, curr = frames[i].numHearts;
+		if (typeof prev !== 'number' || typeof curr !== 'number' || curr >= prev) continue;
+		const p = worldToCanvas(frames[i].position.x, frames[i].position.z, canvas);
+		ctx.beginPath(); ctx.arc(p.x, p.y, 10, 0, Math.PI * 2);
+		ctx.fillStyle = 'rgba(240,96,96,0.25)'; ctx.fill();
+		ctx.beginPath(); ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
+		ctx.fillStyle = '#f06060'; ctx.fill();
+		}
+
 		// Checkpoint markers
 		const cpSeen = {};
 		frames.forEach(f => { const cp = f.waypointReached; if (cp != null && !cpSeen[cp]) cpSeen[cp] = {x:f.position.x, z:f.position.z}; });
@@ -338,57 +361,55 @@ document.addEventListener('DOMContentLoaded', () => {
 	}
 
 	function attachHover(canvas, frames) {
-	const tooltip = document.getElementById('path-tooltip');
+		const tooltip = document.getElementById('path-tooltip');
 
-	// Prevent stacking listeners (important)
-	canvas.onmousemove = null;
-	canvas.onmouseleave = null;
-
-	canvas.onmousemove = e => {
-		const rect = mapImage.getBoundingClientRect();
-		const mx = e.clientX - rect.left;
-		const my = e.clientY - rect.top;
-
-		let nearest = null, minDist = Infinity;
-
-		frames.forEach(f => {
-		const p = worldToCanvas(f.position.x, f.position.z, canvas);
-		const d = Math.hypot(p.x - mx, p.y - my);
-		if (d < minDist) {
-			minDist = d;
-			nearest = f;
+		// Precompute which timestamps have a heart drop
+		const damageTimestamps = new Set();
+		for (let i = 1; i < frames.length; i++) {
+			const prev = frames[i-1].numHearts, curr = frames[i].numHearts;
+			if (typeof prev === 'number' && typeof curr === 'number' && curr < prev) {
+				damageTimestamps.add(frames[i].timestamp);
+			}
 		}
-		});
 
-		if (nearest && minDist < 20) {
-		const t = nearest.timestamp;
-		const m = Math.floor(t / 60);
-		const s = (t % 60).toFixed(2);
-		const ts = m > 0 ? `${m}m ${s}s` : `${s}s`;
+		canvas.onmousemove = null;
+		canvas.onmouseleave = null;
 
-		
+		canvas.onmousemove = e => {
+			const rect = mapImage.getBoundingClientRect();
+			const mx = e.clientX - rect.left;
+			const my = e.clientY - rect.top;
 
-		tooltip.innerHTML =
-			`<span style="color:#4af0a8">t = ${ts}</span><br>` +
-			`x: ${nearest.position.x.toFixed(1)} &nbsp; z: ${nearest.position.z.toFixed(1)}<br>` +
-			`depth: ${nearest.waterDepth.toFixed(2)}m` +
-			(nearest.isLookingAtPhone ? `<br><span style="color:#f0b840">■ phone</span>` : '') +
-			(nearest.recordingWater   ? `<br><span style="color:#4ab4f0">■ water recording</span>` : '');
-			(nearest.userWaterHeightGuess !== -1
-			? `<br><span style="color:#4ab4f0">guess: ${nearest.userWaterHeightGuess.toFixed(2)}m</span>`
-			: '')
+			let nearest = null, minDist = Infinity;
+			frames.forEach(f => {
+				const p = worldToCanvas(f.position.x, f.position.z, canvas);
+				const d = Math.hypot(p.x - mx, p.y - my);
+				if (d < minDist) { minDist = d; nearest = f; }
+			});
 
-		tooltip.style.display = 'block';
-		tooltip.style.left = (e.clientX + 14) + 'px';
-		tooltip.style.top  = (e.clientY - 10) + 'px';
-		} else {
-		tooltip.style.display = 'none';
-		}
-	};
+			if (nearest && minDist < 20) {
+				const t = nearest.timestamp;
+				const m = Math.floor(t / 60);
+				const s = (t % 60).toFixed(2);
+				const ts = m > 0 ? `${m}m ${s}s` : `${s}s`;
 
-	canvas.onmouseleave = () => {
-		tooltip.style.display = 'none';
-	};
+				tooltip.innerHTML =
+					`<span style="color:#4af0a8">t = ${ts}</span><br>` +
+					`x: ${nearest.position.x.toFixed(1)} &nbsp; z: ${nearest.position.z.toFixed(1)}<br>` +
+					`depth: ${nearest.waterDepth.toFixed(2)}m` +
+					(nearest.isLookingAtPhone ? `<br><span style="color:#f0b840">■ phone</span>` : '') +
+					(nearest.userWaterHeightGuess !== -1 ? `<br><span style="color:#4ab4f0">guess: ${nearest.userWaterHeightGuess.toFixed(2)}m</span>` : '') +
+					(damageTimestamps.has(nearest.timestamp) ? `<br><span style="color:#f06060">■ took damage</span>` : '');
+
+				tooltip.style.display = 'block';
+				tooltip.style.left = (e.clientX + 14) + 'px';
+				tooltip.style.top  = (e.clientY - 10) + 'px';
+			} else {
+				tooltip.style.display = 'none';
+			}
+		};
+
+		canvas.onmouseleave = () => { tooltip.style.display = 'none'; };
 	}
 
 	// ── Sample data ───────────────────────────────────────────────────────────

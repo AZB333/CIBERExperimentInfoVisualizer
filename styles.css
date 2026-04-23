@@ -80,7 +80,9 @@
     .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.1rem 1.25rem; }
     .panel-title { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 1rem; }
 
-    .cp-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--border); }
+    .cp-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--border); justify-content: space-between; }
+    .cp-row-left { display: flex; align-items: center; gap: 10px; }
+    .cp-duration { font-family: var(--mono); font-size: 11px; color: var(--text-muted); white-space: nowrap; }
     .cp-row:last-child { border-bottom: none; }
     .cp-dot { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 11px; font-weight: 500; flex-shrink: 0; }
     .cp-dot.hit  { background: var(--accent-dim); color: var(--accent); border: 1px solid rgba(74,240,168,0.3); }
