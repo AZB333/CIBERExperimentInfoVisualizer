@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
 	const mapPlaceholder = document.getElementById('map-placeholder');
 	const _bounds = {
 		minX: 57,
-		maxX: 420,
+		maxX: 425,
 		minZ: -5,
 		maxZ: 359
 		};
