@@ -148,36 +148,36 @@ document.addEventListener('DOMContentLoaded', () => {
 		}
  
 
-		//Checkpoint Stuff
+		//waypoint Stuff
 
 		// Collect first arrival time per waypoint
-		const cpTimes = {};
+		const wpTimes = {};
 		for (const f of frames) {
-		const cp = f.waypointReached;
-		if (cp != null && !(cp in cpTimes)) cpTimes[cp] = f.timestamp;
+		const wp = f.waypointReached;
+		if (wp != null && !(wp in wpTimes)) wpTimes[wp] = f.timestamp;
 		}
 	
 		// Collect durationInWaypoint 
-		const cpDurations = {};
+		const wpDurations = {};
 		for (const f of frames) {
-		const cp = f.waypointReached;
-		if (cp != null && typeof f.durationInWaypoint === 'number' && f.durationInWaypoint !== -1 && !(cp in cpDurations)) {
-			cpDurations[cp] = f.durationInWaypoint;
+		const wp = f.waypointReached;
+		if (wp != null && typeof f.durationInWaypoint === 'number' && f.durationInWaypoint !== -1 && !(wp in wpDurations)) {
+			wpDurations[wp] = f.durationInWaypoint;
 		}
 		}
 	
-		const finished = 8 in cpTimes;
+		const finished = 8 in wpTimes;
 		document.getElementById('s-badge').innerHTML = finished
 		? '<span class="badge badge-success">&#10003; Completed</span>'
 		: '<span class="badge badge-danger">&#10005; Did not finish</span>';
 	
-		const cpList = document.getElementById('cp-list');
-		cpList.innerHTML = '';
+		const wpList = document.getElementById('wp-list');
+		wpList.innerHTML = '';
 		for (let i = 1; i <= 8; i++) {
-		const hit = i in cpTimes;
-		const dur = cpDurations[i];
-		const durStr = (hit && dur !== undefined) ? `<span class="cp-duration">${dur.toFixed(2)}s in zone</span>` : '';
-		cpList.innerHTML += `<div class="cp-row"><div class="cp-row-left"><div class="cp-dot ${hit ? 'hit' : 'miss'}">${i}</div>${hit ? `<span class="cp-time">${formatTime(cpTimes[i])}</span>` : `<span class="cp-none">not reached</span>`}</div>${durStr}</div>`;
+		const hit = i in wpTimes;
+		const dur = wpDurations[i];
+		const durStr = (hit && dur !== undefined) ? `<span class="wp-duration">${dur.toFixed(2)}s in zone</span>` : '';
+		wpList.innerHTML += `<div class="wp-row"><div class="wp-row-left"><div class="wp-dot ${hit ? 'hit' : 'miss'}">${i}</div>${hit ? `<span class="wp-time">${formatTime(wpTimes[i])}</span>` : `<span class="wp-none">not reached</span>`}</div>${durStr}</div>`;
 		}
 
 		const phoneEvents = [];
@@ -335,12 +335,12 @@ document.addEventListener('DOMContentLoaded', () => {
 		ctx.fillStyle = '#f06060'; ctx.fill();
 		}
 
-		// Checkpoint markers
-		const cpSeen = {};
-		frames.forEach(f => { const cp = f.waypointReached; if (cp != null && !cpSeen[cp]) cpSeen[cp] = {x:f.position.x, z:f.position.z}; });
-		Object.entries(cpSeen).forEach(([cp, pos]) => {
+		// waypoint markers
+		const wpSeen = {};
+		frames.forEach(f => { const wp = f.waypointReached; if (wp != null && !wpSeen[wp]) wpSeen[wp] = {x:f.position.x, z:f.position.z}; });
+		Object.entries(wpSeen).forEach(([wp, pos]) => {
 		const c = worldToCanvas(pos.x, pos.z, canvas);
-		const isLast = parseInt(cp) === 8;
+		const isLast = parseInt(wp) === 8;
 		ctx.beginPath(); ctx.arc(c.x, c.y, 13, 0, Math.PI*2);
 		ctx.fillStyle = isLast ? 'rgba(240,64,168,0.3)' : 'rgba(74,240,168,0.15)'; ctx.fill();
 		ctx.beginPath(); ctx.arc(c.x, c.y, 9, 0, Math.PI*2);
@@ -349,7 +349,7 @@ document.addEventListener('DOMContentLoaded', () => {
 		ctx.fillStyle = isLast ? '#fff' : '#4af0a8';
 		ctx.font = '500 10px IBM Plex Mono, monospace';
 		ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-		ctx.fillText(cp, c.x, c.y);
+		ctx.fillText(wp, c.x, c.y);
 		});
 
 		// Start dot
