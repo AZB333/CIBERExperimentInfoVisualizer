@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
 	resetBtn.addEventListener('click', () => {
 		dashboard.style.display = 'none';
 		statusMsg.style.display = 'none'; statusMsg.className = '';
-		pasteArea.value = ''; fileInput.value = ''; _pathFrames = [];
+		fileInput.value = ''; _pathFrames = [];
 	});
 
 	function computeBounds(frames) {
