@@ -95,6 +95,7 @@ document.addEventListener('DOMContentLoaded', () => {
 		const frames = data.frames;
 		_pathFrames = frames;
 		document.getElementById('s-name').textContent = data.sessionName || 'Unknown session';
+		document.getElementById('s-source').textContent = data.alertSource || '';
 		document.getElementById('s-date').textContent = data.recordingDate || '';
 
 		const dur = typeof data.duration === 'number' ? data.duration : (frames[frames.length-1]?.timestamp || 0);
